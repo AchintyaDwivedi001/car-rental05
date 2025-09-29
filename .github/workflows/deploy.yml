@@ -17,16 +17,13 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Build frontend
+    - name: Install dependencies
       run: |
-        cd frontend
         npm install
-        npm run build
 
-    - name: Install backend
+    - name: Build project
       run: |
-        cd backend
-        npm install
+        npm run build
 
     - name: Build Docker image
       run: docker build -t yourusername/carental-05:latest .
