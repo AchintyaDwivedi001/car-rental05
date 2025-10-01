@@ -22,12 +22,10 @@ jobs:
         cd frontend
         npm install
         npm run build
-
     - name: Install backend
       run: |
         cd backend
         npm install
-
     - name: Build Docker image
       run: docker build -t yourusername/carental-05:latest .
 
