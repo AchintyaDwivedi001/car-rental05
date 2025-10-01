@@ -1,45 +1,49 @@
-name: CI/CD Pipeline
+name: build-and-deploy
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main   # runs when you push to main branch
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Step 1: Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Node
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-    - name: Install dependencies
-      run: |
-        npm install
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+        working-directory: .   # root of your project
 
-    - name: Build project
-      run: |
-        npm run build
+      # Step 4: Build Next.js app
+      - name: Build Next.js app
+        run: npm run build
+        working-directory: .
 
-    - name: Build Docker image
-      run: docker build -t yourusername/carental-05:latest .
+      # Step 5: Build Docker image
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/carental05 .
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # Step 6: Login to Docker Hub
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-    - name: Push Docker image
-      run: docker push yourusername/carental-05:latest
+      # Step 7: Push Docker image
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/carental05
 
-    - name: Deploy to Fly.io
-      uses: superfly/flyctl-actions@1.1
-      with:
-        args: "deploy"
-      env:
-        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # Step 8: Deploy to Fly.io
+      - name: Deploy to Fly.io
+        uses: superfly/flyctl-actions@1.1
+        with:
+          args: "deploy --remote-only"
