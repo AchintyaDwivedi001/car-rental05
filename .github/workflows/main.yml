@@ -1,25 +1,77 @@
-name: Deploy
+name: Build and Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
         with:
-          node-version: '18' # or your preferred version
-          cache: 'npm'
-      
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+
       - name: Install dependencies
-        run: npm ci
-      
+        run: yarn install --frozen-lockfile
+
       - name: Build project
-        run: npm run build
+        run: yarn build
+
+      - name: Run tests (optional)
+        run: yarn test --passWithNoTests
+        continue-on-error: true
+
+      # Optional: Upload build artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-files
+          path: |
+            .next
+            out
+            public
+
+  # Optional: Deploy job (uncomment and configure as needed)
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #     
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18.x
+  #         cache: 'yarn'
+  #     
+  #     - name: Install dependencies
+  #       run: yarn install --frozen-lockfile
+  #     
+  #     - name: Build project
+  #       run: yarn build
+  #     
+  #     # Add your deployment steps here
+  #     # For example, deploying to Vercel:
+  #     # - name: Deploy to Vercel
+  #     #   uses: amondnet/vercel-action@v20
+  #     #   with:
+  #     #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
+  #     #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+  #     #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+  #     #     vercel-args: '--prod'
